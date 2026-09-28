@@ -7,62 +7,12 @@
 <link rel="icon" href="data:," />
 <link rel="preload" as="image" href="/assets/loading/01.webp" fetchpriority="high" />
 <link rel="stylesheet" id="sys-fonts" href="/assets/ui/fonts/fonts.css" /><!-- the one fonts.css link (src/ui/fonts.js loadFonts() keeps it single) -->
-<style>
-html,body{margin:0;height:100%;overflow:hidden;background:#000}canvas{display:block}
-/* ---- loading screen (shown before any script runs; driven by window.__boot, see below) ----
-   Everything that moves is transform / opacity, so it keeps animating on the compositor while the city build blocks
-   the main thread: the slideshow is pure CSS keyframes, the bar a long CSS transition toward the expected end of the
-   current stage (durations remembered from the previous load on this machine). */
-#boot{--red:#e3262f;position:fixed;inset:0;z-index:1000;background:#040509;color:#f4f6fb;overflow:hidden;
-  font-family:'Spiderbench Sans',Manrope,system-ui,sans-serif;transition:opacity .9s ease;cursor:progress;user-select:none}
-#boot.out{opacity:0;pointer-events:none}
-#boot .slides{position:absolute;inset:0}
-#boot figure{position:absolute;inset:0;margin:0;opacity:0;animation:bootFade var(--T) linear infinite;animation-delay:calc(var(--i) * var(--S))}
-#boot figure img{position:absolute;inset:-2%;width:104%;height:104%;object-fit:cover;animation:bootKB var(--T) linear infinite;
-  animation-delay:calc(var(--i) * var(--S));transform-origin:var(--o,50% 50%);will-change:transform}
-#boot figure:nth-child(even) img{animation-name:bootKB2}
-#boot figcaption{position:absolute;right:clamp(20px,4vw,64px);top:clamp(20px,4.5vh,54px);font:800 12px/1 'Spiderbench Sans',sans-serif;
-  letter-spacing:.42em;text-transform:uppercase;color:rgba(244,246,251,.9);display:flex;align-items:center;gap:12px;
-  text-shadow:0 1px 2px rgba(0,0,0,.55),0 0 18px rgba(0,0,0,.45)}
-#boot figcaption::before{content:'';width:26px;height:1px;background:rgba(244,246,251,.7);box-shadow:0 0 6px rgba(0,0,0,.5)}
-/* each slide: fade in 1.2 s, hold, fade out while the next one fades in (N slides x S s, loop) */
-@keyframes bootFade{0%{opacity:0}3.2%{opacity:1}16.7%{opacity:1}19.9%{opacity:0}100%{opacity:0}}
-@keyframes bootKB{0%{transform:scale(1.10) translate3d(1.2%,.6%,0)}20%{transform:scale(1.0) translate3d(-.6%,-.3%,0)}100%{transform:scale(1.0) translate3d(-.6%,-.3%,0)}}
-@keyframes bootKB2{0%{transform:scale(1.0) translate3d(-1%,.4%,0)}20%{transform:scale(1.09) translate3d(.8%,-.5%,0)}100%{transform:scale(1.09) translate3d(.8%,-.5%,0)}}
-/* legibility shading lives in each slide, under its caption (a global layer above the slides dimmed the captions) */
-#boot figure::after{content:'';position:absolute;inset:0;background:
-  linear-gradient(0deg,rgba(3,4,9,.92) 0%,rgba(3,4,9,.55) 18%,rgba(3,4,9,0) 42%),
-  linear-gradient(180deg,rgba(3,4,9,.5) 0%,rgba(3,4,9,0) 20%),
-  radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%)}
-#boot figcaption{z-index:1}
-#boot .grain{position:absolute;inset:-50%;opacity:.07;mix-blend-mode:overlay;animation:bootGrain .9s steps(6) infinite;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-@keyframes bootGrain{0%{transform:translate3d(0,0,0)}20%{transform:translate3d(-6%,4%,0)}40%{transform:translate3d(5%,-7%,0)}60%{transform:translate3d(-3%,8%,0)}80%{transform:translate3d(7%,2%,0)}100%{transform:translate3d(0,0,0)}}
-#boot .ui{position:absolute;left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px);bottom:clamp(26px,6vh,64px)}
-#boot .brand{display:flex;align-items:flex-end;gap:16px;margin-bottom:clamp(18px,3.2vh,30px)}
-#boot .brand b{font:800 clamp(44px,7vw,92px)/.82 'Spiderbench Condensed','Barlow Condensed','Arial Narrow',sans-serif;letter-spacing:.01em;
-  text-shadow:0 6px 30px rgba(0,0,0,.45)}
-#boot .brand b i{font-style:normal;color:var(--red)}
-#boot .brand span{font:700 11px/1.5 'Spiderbench Sans',sans-serif;letter-spacing:.42em;text-transform:uppercase;color:rgba(244,246,251,.6);
-  padding-bottom:.35em;border-left:1px solid rgba(244,246,251,.3);padding-left:14px}
-#boot .row{display:flex;justify-content:space-between;align-items:baseline;font:600 12px/1 'Spiderbench Sans',sans-serif;
-  letter-spacing:.3em;text-transform:uppercase;color:rgba(244,246,251,.82);margin-bottom:12px}
-#boot .row .lbl{transition:opacity .25s}
-#boot .msg{display:none;margin-top:12px;font:500 13px/1.45 'Spiderbench Sans',sans-serif;color:rgba(244,246,251,.78);max-width:min(720px,100%);overflow-wrap:anywhere}
-#boot.err .msg{display:block}
-#boot.err .row{color:#ff8a8f}#boot.err .row .dots,#boot.err .bar b{display:none}#boot.err .bar i{background:#9e1017}
-#boot .row .dots i{display:inline-block;width:4px;height:4px;margin-left:6px;border-radius:50%;background:currentColor;opacity:.25;
-  animation:bootDot 1.2s ease-in-out infinite}
-#boot .row .dots i:nth-child(2){animation-delay:.2s}#boot .row .dots i:nth-child(3){animation-delay:.4s}
-@keyframes bootDot{0%,100%{opacity:.2;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
-#boot .bar{position:relative;height:2px;background:rgba(244,246,251,.14);overflow:hidden}
-#boot .bar i{position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(0);will-change:transform;
-  background:linear-gradient(90deg,#9e1017,var(--red) 70%,#ff6a70)}
-#boot .bar b{position:absolute;top:0;bottom:0;width:18%;left:-18%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.55),rgba(255,255,255,0));
-  animation:bootSheen 1.8s ease-in-out infinite;will-change:transform}
-@keyframes bootSheen{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(660%,0,0)}}
-@media (prefers-reduced-motion:reduce){#boot figure img,#boot .grain,#boot .bar b,#boot .row .dots i{animation:none}}
-</style>
+<style>html,body{background:#000;height:100%;margin:0;overflow:hidden}canvas{display:block}#boot{--red:#e3262f;z-index:1000;color:#f4f6fb;cursor:progress;user-select:none;background:#040509;font-family:Spiderbench Sans,Manrope,system-ui,sans-serif;transition:opacity .9s;position:fixed;inset:0;overflow:hidden}#boot.out{opacity:0;pointer-events:none}#boot .slides{position:absolute;inset:0}#boot figure{opacity:0;animation:bootFade var(--T) linear infinite;animation-delay:calc(var(--i) * var(--S));margin:0;position:absolute;inset:0}#boot figure img{object-fit:cover;width:104%;height:104%;animation:bootKB var(--T) linear infinite;animation-delay:calc(var(--i) * var(--S));transform-origin:var(--o,50% 50%);will-change:transform;position:absolute;inset:-2%}#boot figure:nth-child(2n) img{animation-name:bootKB2}#boot figcaption{letter-spacing:.42em;text-transform:uppercase;color:#f4f6fbe6;text-shadow:0 1px 2px #0000008c,0 0 18px #00000073;align-items:center;gap:12px;font:800 12px/1 Spiderbench Sans,sans-serif;display:flex;position:absolute;top:clamp(20px,4.5vh,54px);right:clamp(20px,4vw,64px)}#boot figcaption:before{content:"";background:#f4f6fbb3;width:26px;height:1px;box-shadow:0 0 6px #00000080}@keyframes bootFade{0%{opacity:0}3.2%{opacity:1}16.7%{opacity:1}19.9%{opacity:0}to{opacity:0}}@keyframes bootKB{0%{transform:scale(1.1)translate(1.2%,.6%)}20%{transform:scale(1)translate(-.6%,-.3%)}to{transform:scale(1)translate(-.6%,-.3%)}}@keyframes bootKB2{0%{transform:scale(1)translate(-1%,.4%)}20%{transform:scale(1.09)translate(.8%,-.5%)}to{transform:scale(1.09)translate(.8%,-.5%)}}#boot figure:after{content:"";background:linear-gradient(#03040900 58%,#0304098c 82%,#030409eb 100%),linear-gradient(#03040980 0%,#03040900 20%),radial-gradient(at 50% 45%,#0000 55%,#0000008c 100%);position:absolute;inset:0}#boot figcaption{z-index:1}#boot .grain{opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:.9s steps(6,end) infinite bootGrain;position:absolute;inset:-50%}@keyframes bootGrain{0%{transform:translate(0,0)}20%{transform:translate(-6%,4%)}40%{transform:translate(5%,-7%)}60%{transform:translate(-3%,8%)}80%{transform:translate(7%,2%)}to{transform:translate(0,0)}}#boot .ui{position:absolute;bottom:clamp(26px,6vh,64px);left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px)}#boot .brand{align-items:flex-end;gap:16px;margin-bottom:clamp(18px,3.2vh,30px);display:flex}#boot .brand b{letter-spacing:.01em;text-shadow:0 6px 30px #00000073;font:800 clamp(44px,7vw,92px)/.82 Spiderbench Condensed,Barlow Condensed,Arial Narrow,sans-serif}#boot .brand b i{color:var(--red);font-style:normal}#boot .brand span{letter-spacing:.42em;text-transform:uppercase;color:#f4f6fb99;border-left:1px solid #f4f6fb4d;padding-bottom:.35em;padding-left:14px;font:700 11px/1.5 Spiderbench Sans,sans-serif}#boot .row{letter-spacing:.3em;text-transform:uppercase;color:#f4f6fbd1;justify-content:space-between;align-items:baseline;margin-bottom:12px;font:600 12px/1 Spiderbench Sans,sans-serif;display:flex}#boot .row .lbl{transition:opacity .25s}#boot .msg{color:#f4f6fbc7;overflow-wrap:anywhere;max-width:min(720px,100%);margin-top:12px;font:500 13px/1.45 Spiderbench Sans,sans-serif;display:none}#boot.err .msg{display:block}#boot.err .row{color:#ff8a8f}#boot.err .row .dots,#boot.err .bar b{display:none}#boot.err .bar i{background:#9e1017}#boot .row .dots i{opacity:.25;background:currentColor;border-radius:50%;width:4px;height:4px;margin-left:6px;animation:1.2s ease-in-out infinite bootDot;display:inline-block}#boot .row .dots i:nth-child(2){animation-delay:.2s}#boot .row .dots i:nth-child(3){animation-delay:.4s}@keyframes bootDot{0%,to{opacity:.2;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}#boot .bar{background:#f4f6fb24;height:2px;position:relative;overflow:hidden}#boot .bar i{transform-origin:0;will-change:transform;background:linear-gradient(90deg,#9e1017,var(--red) 70%,#ff6a70);position:absolute;inset:0;transform:scaleX(0)}#boot .bar b{will-change:transform;background:linear-gradient(90deg,#fff0,#ffffff8c,#fff0);width:18%;animation:1.8s ease-in-out infinite bootSheen;position:absolute;top:0;bottom:0;left:-18%}@keyframes bootSheen{0%{transform:translate(0,0)}to{transform:translate(660%)}}@media (prefers-reduced-motion:reduce){#boot figure img,#boot .grain,#boot .bar b,#boot .row .dots i{animation:none}}</style>
+  <script type="module" crossorigin src="/assets/index-C2eVItQy.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/three.core-DtjtRha-.js">
+  <link rel="modulepreload" crossorigin href="/assets/GLTFLoader-Ca65khyn.js">
+  <link rel="modulepreload" crossorigin href="/assets/fonts-MrZ1CdPX.js">
+  <link rel="modulepreload" crossorigin href="/assets/skeleton-Mnuby_qd.js">
 </head>
 <body>
 <div id="boot" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -155,6 +105,5 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000}canvas{display:bl
 })();
 </script>
 <div id="hud"></div>
-<script type="module" src="/src/main.js"></script>
 </body>
 </html>
